@@ -45,7 +45,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::339712877925:role/Test
-          role-session-name: GitHub-Action-Role
           aws-region: us-east-1
      # Step 2
       - name: Create CodeDeploy Deployment
