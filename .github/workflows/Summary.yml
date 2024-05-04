@@ -14,10 +14,10 @@ jobs:
     steps:
       # Step 1: Configure AWS credentials
       - name: Configure AWS credentials
-        run: |
-          echo "Configuring AWS credentials..."
-          # Configure AWS credentials here
-          echo "AWS credentials configured successfully."
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712877925:role/CodeDeployRole
+          aws-region: us-east-1
 
       # Step 2: Create CodeDeploy Deployment
       - name: Create CodeDeploy Deployment
