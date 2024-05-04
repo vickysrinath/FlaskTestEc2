@@ -48,14 +48,18 @@ jobs:
           aws-region: us-east-1
 
       # Step 2: Create CodeDeploy Deployment
+# Step 2: Create CodeDeploy Deployment
       - name: Create CodeDeploy Deployment
         id: deploy
         run: |
-          aws deploy create-deployment \
-            --application-name FlaskApp \
-            --deployment-group-name FlaskGroup \
-            --deployment-config-name CodeDeployDefault.OneAtATime \
-            --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+                         --application-name FlaskApp \
+                         --deployment-group-name FlaskGroup \
+                         --deployment-config-name CodeDeployDefault.OneAtATime \
+                         --github-location repository=${{ github.repository }},commitId=${{ github.sha }} \
+                         --query "deploymentId" --output text)
+          echo "::set-output name=deploymentId::${DEPLOYMENT_ID}"
+
 
       # Step 3: Wait for Deployment to Complete
       - name: Wait for Deployment Completion
