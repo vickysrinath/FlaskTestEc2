@@ -1,4 +1,4 @@
-name: Summary
+name: CI/CD Pipeline Role
 on:
   workflow_dispatch:
   push:
@@ -7,7 +7,6 @@ on:
 jobs:
   continuous-deployment:
     runs-on: ubuntu-latest
-    needs: [continuous-integration]
     if: github.ref == 'refs/heads/main'
     permissions:
       id-token: write
@@ -17,11 +16,7 @@ jobs:
       - name: Configure AWS credentials
         run: |
           echo "Configuring AWS credentials..."
-
-          # Use aws-actions/configure-aws-credentials@v4 to configure AWS credentials
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set default.region us-east-1
+          # Configure AWS credentials here
           echo "AWS credentials configured successfully."
 
       # Step 2: Create CodeDeploy Deployment
@@ -29,8 +24,6 @@ jobs:
         id: deploy
         run: |
           echo "Creating CodeDeploy deployment..."
-
-          # Execute AWS CLI command to create deployment
           DEPLOYMENT_ID=$(aws deploy create-deployment \
                           --application-name FlaskApp \
                           --deployment-group-name FlaskGroup \
@@ -39,8 +32,9 @@ jobs:
                           --query "deploymentId" --output text)
           echo "Deployment created with ID: ${DEPLOYMENT_ID}"
           echo "::set-output name=deploymentId::${DEPLOYMENT_ID}"
-          
-        # Annotate step with details for summary view
+
+      # Step 3: Annotate Deployment Step
+      - name: Annotate Deployment Step
         if: always()
         continue-on-error: true
         env:
