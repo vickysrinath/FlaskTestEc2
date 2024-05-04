@@ -32,6 +32,14 @@ jobs:
       - name: Build Application and Run unit Test
         run: python app.py
 
+name: CI/CD Pipeline Role
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+
   continuous-deployment:
     runs-on: ubuntu-latest
     needs: [continuous-integration]
@@ -40,13 +48,14 @@ jobs:
       id-token: write
       contents: read
     steps:
-     # Step 1
+      # Step 1: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::339712877925:role/CodeDeployRole
           aws-region: us-east-1
-     # Step 2
+
+      # Step 2: Create CodeDeploy Deployment
       - name: Create CodeDeploy Deployment
         id: deploy
         run: |
@@ -55,3 +64,23 @@ jobs:
             --deployment-group-name FlaskGroup \
             --deployment-config-name CodeDeployDefault.OneAtATime \
             --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
+
+      # Step 3: Wait for Deployment to Complete
+      - name: Wait for Deployment Completion
+        id: deployment
+        run: |
+          STATUS=""
+          while [ "$STATUS" != "Succeeded" ] && [ "$STATUS" != "Failed" ]; do
+            STATUS=$(aws deploy get-deployment --deployment-id ${{ steps.deploy.outputs.deploymentId }} --query "deploymentInfo.status" --output text)
+            echo "Deployment Status: $STATUS"
+            sleep 10  # Wait for 10 seconds before checking status again
+          done
+        continue-on-error: true  # Continue even if deployment status check fails
+
+      # Step 4: Display Deployment Logs
+      - name: Display Deployment Logs
+        if: ${{ steps.deployment.outputs.deploymentInfo.status == 'Succeeded' }}
+        run: |
+          aws deploy get-deployment-target --deployment-id ${{ steps.deploy.outputs.deploymentId }} --target-id ${{ steps.deploy.outputs.deploymentId }} --output text > deployment_log.txt
+          cat deployment_log.txt
+        continue-on-error: true  # Continue even if log retrieval fails
