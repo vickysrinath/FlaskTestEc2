@@ -1,0 +1,75 @@
+name: Enhanced Workflow with Task Details
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    outputs:
+      checkout_completed: ${{ steps.checkout.result }}
+      setup_node_completed: ${{ steps.setup_node.result }}
+      install_dependencies_completed: ${{ steps.install_dependencies.result }}
+      run_tests_completed: ${{ steps.run_tests.result }}
+      generate_coverage_report_completed: ${{ steps.generate_coverage_report.result }}
+
+    steps:
+      - name: Checkout code
+        id: checkout
+        uses: actions/checkout@v2
+        
+      - name: Set up Node.js
+        id: setup_node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+          
+      - name: Install dependencies
+        id: install_dependencies
+        run: |
+          npm install
+          echo "::set-output name=install_completed::true"
+          
+      - name: Run tests
+        id: run_tests
+        run: |
+          npm test
+          echo "::set-output name=tests_completed::true"
+          
+      - name: Generate test coverage report
+        id: generate_coverage_report
+        run: |
+          npm run coverage
+          echo "::set-output name=coverage_report_completed::true"
+          echo "Test coverage report generated"
+          echo "::set-output name=coverage::$(cat coverage.txt)"
+          
+      - name: Finalize Build and Test
+        run: echo "Build and test completed successfully"
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    
+    needs: build_and_test
+    
+    steps:
+      - name: Deploy application
+        if: ${{ needs.build_and_test.outputs.tests_completed == 'true' }}
+        run: |
+          echo "Deploying application to production..."
+          # Add deployment steps here
+          
+      - name: Display Job Outputs
+        if: ${{ needs.build_and_test.result == 'success' }}
+        run: |
+          echo "Summary of Build and Test Job:"
+          echo "Checkout completed: ${{ needs.build_and_test.outputs.checkout_completed }}"
+          echo "Node.js setup completed: ${{ needs.build_and_test.outputs.setup_node_completed }}"
+          echo "Dependencies installed: ${{ needs.build_and_test.outputs.install_dependencies_completed }}"
+          echo "Tests executed: ${{ needs.build_and_test.outputs.run_tests_completed }}"
+          echo "Coverage report generated: ${{ needs.build_and_test.outputs.generate_coverage_report_completed }}"
