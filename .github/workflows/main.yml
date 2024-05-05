@@ -1,10 +1,15 @@
-name: Task Flow Summary
+name: Task Summary Workflow
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:  # Enable manual triggering
+    inputs:
+      run_tasks:
+        description: 'Run the task flow'
+        required: true
+        default: 'true'
 
 jobs:
   task_flow:
@@ -21,26 +26,38 @@ jobs:
       - name: Task 1
         id: task_1
         run: echo "Executing Task 1"
-      
+
       - name: Task 2
         id: task_2
         run: echo "Executing Task 2"
-      
+
       - name: Task 3
         id: task_3
         run: echo "Executing Task 3"
-      
+
       - name: Task 4
         id: task_4
         run: echo "Executing Task 4"
 
-      - name: Summarize Task Flow
-        if: always()
+      - name: Set Task Outputs
+        id: set_outputs
+        run: |
+          echo "::set-output name=task_1_completed::${{ job.status }}"
+          echo "::set-output name=task_2_completed::${{ job.status }}"
+          echo "::set-output name=task_3_completed::${{ job.status }}"
+          echo "::set-output name=task_4_completed::${{ job.status }}"
+
+  display_tasks:
+    name: Display Task Summary
+    runs-on: ubuntu-latest
+    needs: task_flow
+    if: github.event_name == 'workflow_dispatch'  # Only run on manual trigger
+
+    steps:
+      - name: Display Task Summary
         run: |
           echo "Summary of Task Flow:"
           echo "Task 1: ${{ needs.task_flow.outputs.task_1_completed }}"
           echo "Task 2: ${{ needs.task_flow.outputs.task_2_completed }}"
           echo "Task 3: ${{ needs.task_flow.outputs.task_3_completed }}"
           echo "Task 4: ${{ needs.task_flow.outputs.task_4_completed }}"
-
-# Display job-level summary in workflow run
